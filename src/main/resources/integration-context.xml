@@ -10,7 +10,35 @@
     http://www.springframework.org/schema/integration/file
     https://www.springframework.org/schema/integration/file/spring-integration-file.xsd">
 
-    <int-file:inbound-channel-adapter directory="file:src/main/resources">
-
+    <!-- 'directory' specifies directory from which to read files. 'filename-pattern' or 'filename-regex'
+        specifies the pattern of names of files that should be read
+        "channel" specifies the channel onto which to place files as payloads of messages
+    -->
+    <int-file:inbound-channel-adapter
+            channel="inboundChannel" directory="file:src/main/resources" filename-pattern="sample.txt">
+        <int:poller fixed-rate="10000">
+        </int:poller>
     </int-file:inbound-channel-adapter>
+
+    <!-- "channel" specifies the channel from which to write files to file system
+        "mode" allows to define what to do if the file already exists
+        "delete-source-files" flag to delete source files if they are successfully processed
+        "filename-generator" allows to provide a reference to the FileNameGenerator strategy to use when generating
+        the destination file's name
+    -->
+    <int-file:outbound-channel-adapter
+            filename-generator="fileNameGenerator"
+            directory="file:src/main/resources/write" auto-create-directory="true"
+            channel="inboundChannel" mode="REPLACE" delete-source-files="true">
+    </int-file:outbound-channel-adapter>
+    <int:channel id="inboundChannel"/>
+
+    <int-file:outbound-gateway reply-channel="someChannel" request-channel="someOtherChannel"
+                               directory="file:src/main/resouces/write" auto-create-directory="true" mode="REPLACE"/>
+    <int-file:file-to-string-transformer input-channel="inboundChannel" output-channel="transformChannel"/>
+
+
+    <int:channel id="transformChannel"/>
+
+    <bean id="fileNameGenerator" class="com.annakhuseinova.springintegrationfileintegration.service.FileNameGeneratorImpl"/>
 </beans>
